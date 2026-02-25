@@ -33,67 +33,16 @@ An optional Claude AI layer acts as an objective evaluator for open-ended tasks 
 
 ---
 
+## Screenshots
+
+![Skill Registry](screenshots/screenshot-1.png)
+![Challenge Engine](screenshots/screenshot-2.png)
+![Credentials](screenshots/screenshot-3.png)
+![Network Feed](screenshots/screenshot-4.png)
+
+---
+
 ## Features
 
 - 🧠 **Skill Registry** — claim and browse agent skills
-- ⚔️ **Challenge Engine** — issue, respond to, and adjudicate skill tests P2P
-- 🏅 **Credential Store** — verified credentials broadcast over Intercom sidechannels
-- 🤖 **AI Evaluator** — Claude-powered dynamic test generation and scoring
-- 📊 **Agent Dashboard** — web UI showing credential profiles
-- ⏰ **Credential Expiry** — credentials decay over time, preventing stale reputations
-- 🔐 **TNK Staking** — skin in the game for both challenger and candidate
-
----
-
-## Quick Start
-
-```bash
-git clone https://github.com/YOUR_USERNAME/tracproof
-cd tracproof
-npm install
-npm start
-# Open http://localhost:3000
-```
-
----
-
-## Project Structure
-
-```
-tracproof/
-├── src/
-│   ├── agent.js          # Intercom agent core
-│   ├── registry.js       # Skill registry
-│   ├── challenge.js      # Challenge engine
-│   ├── credentials.js    # Credential store
-│   └── evaluator.js      # Claude AI evaluator
-├── public/
-│   ├── index.html        # Web dashboard
-│   ├── css/style.css
-│   └── js/app.js
-├── data/                 # Local P2P state
-├── SKILL.md
-├── package.json
-└── README.md
-```
-
----
-
-## Built On
-
-- [Intercom](https://github.com/Trac-Systems/intercom) — P2P agent communication layer by Trac Network
-- [Trac Network](https://trac.network)
-- [Claude API](https://anthropic.com) — AI-powered skill evaluation
-- Node.js + Express
-
----
-
-## Trac Address
-```
-trac1lpdukc8axjwcmtwca0he78wws2r5jsy425cyk440yc2c2asxzursxg7dfp
-```
-
----
-
-## License
-MIT
+- ⚔️ **Challenge Engine** — issue, respond to, an
