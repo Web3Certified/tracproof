@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TracProof — P2P Agent Credential Network</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --border: #1e293b;
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { font-size: 24px; }
+    .logo-text { font-size: 20px; font-weight: bold; color: var(--accent2); letter-spacing: 2px; }
+    .logo-sub { font-size: 11px; color: var(--muted); }
+    .network-status {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(16,185,129,0.1); border: 1px solid var(--green);
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; color: var(--green);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* LAYOUT */
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .stat-value { font-size: 32px; font-weight: bold; color: var(--accent2); }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+    .tab {
+      padding: 10px 20px; cursor: pointer; font-size: 13px; color: var(--muted);
+      border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    .tab:hover { color: var(--text); }
+
+    /* PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    }
+    .card-title { font-size: 14px; color: var(--accent2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* FORM */
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    input, select, textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 13px;
+      outline: none; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: bold; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-success { background: var(--green); color: white; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-warn { background: var(--yellow); color: #000; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid rgba(30,41,59,0.5); }
+    tr:last-child td { border-bottom: none; }
+
+    /* BADGES */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: bold; text-transform: uppercase;
+    }
+    .badge-claimed { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid var(--yellow); }
+    .badge-verified { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid var(--green); }
+    .badge-failed { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red); }
+    .badge-pending { background: rgba(99,102,241,0.15); color: var(--accent); border: 1px solid var(--accent); }
+
+    /* AGENT PROFILE */
+    .profile-header {
+      display: flex; align-items: center; gap: 20px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(34,211,238,0.05));
+      border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    }
+    .avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .trust-score { font-size: 40px; font-weight: bold; color: var(--accent2); }
+    .trust-label { font-size: 11px; color: var(--muted); }
+
+    /* RESPONSE */
+    .response-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; margin-top: 10px; font-size: 12px; color: var(--muted);
+      white-space: pre-wrap; max-height: 200px; overflow-y: auto;
+    }
+    .success-msg { color: var(--green); font-size: 13px; margin-top: 8px; }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+    /* EMPTY STATE */
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+    /* INTERCOM FEED */
+    .feed { max-height: 300px; overflow-y: auto; }
+    .feed-item {
+      padding: 10px 14px; border-left: 3px solid var(--accent);
+      margin-bottom: 8px; background: rgba(99,102,241,0.05); border-radius: 0 8px 8px 0;
+      font-size: 12px;
+    }
+    .feed-time { color: var(--muted); font-size: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔐</div>
+    <div>
+      <div class="logo-text">TRACPROOF</div>
+      <div class="logo-sub">P2P Agent Credential Network · Trac Network</div>
+    </div>
+  </div>
+  <div class="network-status">
+    <div class="dot"></div>
+    <span id="network-peers">-- peers</span> · Intercom Sidechannel Active
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Registered Agents</div>
+      <div class="stat-value" id="stat-agents">0</div>
+      <div class="stat-sub">On this node</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Verified Credentials</div>
+      <div class="stat-value" id="stat-creds">0</div>
+      <div class="stat-sub">Active & non-expired</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Challenges</div>
+      <div class="stat-value" id="stat-challenges">0</div>
+      <div class="stat-sub">Awaiting verification</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Skill Claims</div>
+      <div class="stat-value" id="stat-skills">0</div>
+      <div class="stat-sub">Across all agents</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('registry')">🧠 Skill Registry</div>
+    <div class="tab" onclick="showTab('challenge')">⚔️ Challenge Engine</div>
+    <div class="tab" onclick="showTab('credentials')">🏅 Credentials</div>
+    <div class="tab" onclick="showTab('profile')">👤 Agent Profile</div>
+    <div class="tab" onclick="showTab('evaluator')">🤖 AI Evaluator</div>
+    <div class="tab" onclick="showTab('network')">📡 Network Feed</div>
+  </div>
+
+  <!-- REGISTRY PANEL -->
+  <div class="panel active" id="panel-registry">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Register Skill Claim</div>
+        <div class="form-group">
+          <label>Agent ID</label>
+          <input type="text" id="reg-agentId" placeholder="agent-alpha-001" />
+        </div>
+        <div class="form-group">
+          <label>Skill</label>
+          <select id="reg-skill">
+            <option value="wallet-analysis">wallet-analysis</option>
+            <option value="swap-routing">swap-routing</option>
+            <option value="data-summarization">data-summarization</option>
+            <option value="price-prediction">price-prediction</option>
+            <option value="smart-contract-audit">smart-contract-audit</option>
+            <option value="nft-valuation">nft-valuation</option>
+            <option value="liquidity-management">liquidity-management</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="reg-desc" placeholder="Describe what your agent can do..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Stake Amount (TNK)</label>
+          <input type="number" id="reg-stake" value="100" min="50" />
+        </div>
+        <button class="btn btn-primary" onclick="registerSkill()">Register Skill →</button>
+        <div id="reg-msg"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">All Skill Claims</div>
+        <div id="skills-list"><div class="empty">No skills registered yet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHALLENGE PANEL -->
+  <div class="panel" id="panel-challenge">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Issue a Challenge</div>
+        <div class="form-group">
+          <label>Your Agent ID (Challenger)</label>
+          <input type="text" id="ch-challengerId" placeholder="agent-beta-002" />
+        </div>
+        <div class="form-group">
+          <label>Target Agent ID</label>
+          <input type="text" id="ch-targetId" placeholder="agent-alpha-001" />
+        </div>
+        <div class="form-group">
+          <label>Skill to Challenge</label>
+          <select id="ch-skill">
+            <option value="wallet-analysis">wallet-analysis</option>
+            <option value="swap-routing">swap-routing</option>
+            <option value="data-summarization">data-summarization</option>
+            <option value="price-prediction">price-prediction</option>
+            <option value="smart-contract-audit">smart-contract-audit</option>
+            <option value="nft-valuation">nft-valuation</option>
+            <option value="liquidity-management">liquidity-management</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Stake Amount (TNK)</label>
+          <input type="number" id="ch-stake" value="100" min="50" />
+        </div>
+        <button class="btn btn-warn" onclick="issueChallenge()">⚔️ Issue Challenge</button>
+        <div id="ch-msg"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Active Challenges</div>
+        <div id="challenges-list"><div class="empty">No active challenges</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Respond to Challenge</div>
+      <div class="grid-2">
+        <div>
+          <div class="form-group">
+            <label>Challenge ID</label>
+            <input type="text" id="resp-challengeId" placeholder="paste challenge id" />
+          </div>
+          <div class="form-group">
+            <label>Your Agent ID</label>
+            <input type="text" id="resp-agentId" placeholder="agent-alpha-001" />
+          </div>
+          <div class="form-group">
+            <label>Your Skill Demonstration</label>
+            <textarea id="resp-response" placeholder="Demonstrate your skill here..."></textarea>
+          </div>
+          <button class="btn btn-success" onclick="respondChallenge()">Submit Response →</button>
+          <div id="resp-msg"></div>
+        </div>
+        <div>
+          <div class="form-group">
+            <label>Cast Verification Vote</label>
+          </div>
+          <div class="form-group">
+            <label>Challenge ID</label>
+            <input type="text" id="vote-challengeId" placeholder="challenge id" />
+          </div>
+          <div class="form-group">
+            <label>Your Witness Agent ID</label>
+            <input type="text" id="vote-witnessId" placeholder="agent-witness-003" />
+          </div>
+          <div class="form-group">
+            <label>Vote</label>
+            <select id="vote-vote">
+              <option value="PASS">✅ PASS</option>
+              <option value="FAIL">❌ FAIL</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <input type="text" id="vote-reason" placeholder="Brief reason for vote" />
+          </div>
+          <button class="btn btn-primary" onclick="castVote()">Cast Vote →</button>
+          <div id="vote-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREDENTIALS PANEL -->
+  <div class="panel" id="panel-credentials">
+    <div class="card">
+      <div class="card-title">🏅 Verified Credentials</div>
+      <div class="form-group" style="display:flex; gap:12px; align-items:flex-end;">
+        <div style="flex:1">
+          <label>Filter by Skill</label>
+          <select id="filter-skill" onchange="loadCredentials()">
+            <option value="">All Skills</option>
+            <option value="wallet-analysis">wallet-analysis</option>
+            <option value="swap-routing">swap-routing</option>
+            <option value="data-summarization">data-summarization</option>
+            <option value="price-prediction">price-prediction</option>
+            <option value="smart-contract-audit">smart-contract-audit</option>
+            <option value="nft-valuation">nft-valuation</option>
+            <option value="liquidity-management">liquidity-management</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="loadCredentials()">Filter</button>
+      </div>
+      <div id="credentials-list"><div class="empty">No credentials yet</div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE PANEL -->
+  <div class="panel" id="panel-profile">
+    <div class="card">
+      <div class="card-title">Lookup Agent Profile</div>
+      <div style="display:flex; gap:12px;">
+        <input type="text" id="profile-agentId" placeholder="Enter agent ID..." style="flex:1" />
+        <button class="btn btn-primary" onclick="loadProfile()">Load Profile →</button>
+      </div>
+    </div>
+    <div id="profile-result"></div>
+  </div>
+
+  <!-- EVALUATOR PANEL -->
+  <div class="panel" id="panel-evaluator">
+    <div class="card">
+      <div class="card-title">🤖 Claude AI Skill Evaluator</div>
+      <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+        Submit an agent's skill response for objective AI evaluation. Used when witness consensus is split or for high-stakes credential decisions.
+      </p>
+      <div class="grid-2">
+        <div>
+          <div class="form-group">
+            <label>Skill Being Tested</label>
+            <select id="eval-skill">
+              <option value="wallet-analysis">wallet-analysis</option>
+              <option value="swap-routing">swap-routing</option>
+              <option value="data-summarization">data-summarization</option>
+              <option value="price-prediction">price-prediction</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Context / Task Description</label>
+            <input type="text" id="eval-context" placeholder="e.g. Analyze the wallet 0x123... for TRAC holdings" />
+          </div>
+          <div class="form-group">
+            <label>Agent's Response to Evaluate</label>
+            <textarea id="eval-response" style="min-height:120px;" placeholder="Paste the agent's skill demonstration here..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="runEvaluation()">🤖 Evaluate with Claude →</button>
+        </div>
+        <div>
+          <div class="card-title">Evaluation Result</div>
+          <div id="eval-result"><div class="empty">Submit a response to evaluate</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NETWORK PANEL -->
+  <div class="panel" id="panel-network">
+    <div class="card">
+      <div class="card-title">📡 Intercom P2P Network Feed</div>
+      <p style="color:var(--muted); font-size:12px; margin-bottom:16px;">Live broadcasts from the Intercom sidechannel network</p>
+      <div class="feed" id="network-feed">
+        <div class="empty">Connecting to Intercom sidechannel...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Network Stats</div>
+      <div id="network-stats" style="font-size:13px; color:var(--muted);">Loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'registry') loadSkills();
+  if (name === 'challenge') loadChallenges();
+  if (name === 'credentials') loadCredentials();
+  if (name === 'network') loadNetwork();
+}
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+async function loadStats() {
+  try {
+    const [skills, creds, challenges, net] = await Promise.all([
+      api('/api/skills'), api('/api/credentials'), api('/api/challenges'), api('/api/network/broadcast')
+    ]);
+    document.getElementById('stat-agents').textContent = net.registeredAgents || 0;
+    document.getElementById('stat-creds').textContent = creds.length || 0;
+    document.getElementById('stat-challenges').textContent = challenges.filter(c=>c.status==='PENDING'||c.status==='AWAITING_VERIFICATION').length;
+    document.getElementById('stat-skills').textContent = skills.length || 0;
+    document.getElementById('network-peers').textContent = `${net.peers} peers`;
+  } catch(e) {}
+}
+
+async function registerSkill() {
+  const agentId = document.getElementById('reg-agentId').value.trim();
+  const skill = document.getElementById('reg-skill').value;
+  const description = document.getElementById('reg-desc').value.trim();
+  const stakeAmount = parseInt(document.getElementById('reg-stake').value);
+  const msg = document.getElementById('reg-msg');
+  if (!agentId) { msg.innerHTML = '<div class="error-msg">Agent ID required</div>'; return; }
+  const r = await api('/api/skills/register', 'POST', {agentId, skill, description, stakeAmount});
+  if (r.success) {
+    msg.innerHTML = '<div class="success-msg">✅ Skill registered successfully!</div>';
+    loadSkills(); loadStats();
+  } else {
+    msg.innerHTML = `<div class="error-msg">❌ ${r.message}</div>`;
+  }
+}
+
+async function loadSkills() {
+  const skills = await api('/api/skills');
+  const el = document.getElementById('skills-list');
+  if (!skills.length) { el.innerHTML = '<div class="empty">No skills registered yet</div>'; return; }
+  el.innerHTML = `<table>
+    <tr><th>Agent</th><th>Skill</th><th>Status</th><th>Stake</th></tr>
+    ${skills.map(s=>`<tr>
+      <td style="color:var(--accent2)">${s.agentId}</td>
+      <td>${s.skill}</td>
+      <td><span class="badge badge-${s.status.toLowerCase()}">${s.status}</span></td>
+      <td>${s.stakeAmount} TNK</td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+async function issueChallenge() {
+  const body = {
+    challengerId: document.getElementById('ch-challengerId').value.trim(),
+    targetId: document.getElementById('ch-targetId').value.trim(),
+    skill: document.getElementById('ch-skill').value,
+    stakeAmount: parseInt(document.getElementById('ch-stake').value)
+  };
+  const msg = document.getElementById('ch-msg');
+  if (!body.challengerId || !body.targetId) { msg.innerHTML = '<div class="error-msg">All fields required</div>'; return; }
+  const r = await api('/api/challenges/issue', 'POST', body);
+  if (r.success) {
+    msg.innerHTML = `<div class="success-msg">⚔️ Challenge issued! ID: ${r.challenge.id}</div>`;
+    document.getElementById('resp-challengeId').value = r.challenge.id;
+    loadChallenges(); loadStats();
+  } else {
+    msg.innerHTML = `<div class="error-msg">❌ ${r.message}</div>`;
+  }
+}
+
+async function loadChallenges() {
+  const challenges = await api('/api/challenges');
+  const el = document.getElementById('challenges-list');
+  if (!challenges.length) { el.innerHTML = '<div class="empty">No challenges yet</div>'; return; }
+  el.innerHTML = `<table>
+    <tr><th>Challenger</th><th>Target</th><th>Skill</th><th>Status</th><th>Votes</th></tr>
+    ${challenges.map(c=>`<tr>
+      <td style="color:var(--yellow)">${c.challengerId}</td>
+      <td style="color:var(--accent2)">${c.targetId}</td>
+      <td>${c.skill}</td>
+      <td><span class="badge badge-${c.status==='VERIFIED'?'verified':c.status==='FAILED'?'failed':'pending'}">${c.status}</span></td>
+      <td>${c.votes.length}</td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+async function respondChallenge() {
+  const body = {
+    challengeId: document.getElementById('resp-challengeId').value.trim(),
+    agentId: document.getElementById('resp-agentId').value.trim(),
+    response: document.getElementById('resp-response').value.trim()
+  };
+  const msg = document.getElementById('resp-msg');
+  if (!body.challengeId || !body.agentId || !body.response) { msg.innerHTML = '<div class="error-msg">All fields required</div>'; return; }
+  const r = await api('/api/challenges/respond', 'POST', body);
+  if (r.success) {
+    msg.innerHTML = '<div class="success-msg">✅ Response submitted! Awaiting witness votes.</div>';
+    document.getElementById('vote-challengeId').value = body.challengeId;
+    loadChallenges();
+  } else {
+    msg.innerHTML = `<div class="error-msg">❌ ${r.message}</div>`;
+  }
+}
+
+async function castVote() {
+  const body = {
+    challengeId: document.getElementById('vote-challengeId').value.trim(),
+    witnessId: document.getElementById('vote-witnessId').value.trim(),
+    vote: document.getElementById('vote-vote').value,
+    reason: document.getElementById('vote-reason').value.trim()
+  };
+  const msg = document.getElementById('vote-msg');
+  if (!body.challengeId || !body.witnessId) { msg.innerHTML = '<div class="error-msg">All fields required</div>'; return; }
+  const r = await api('/api/challenges/verify', 'POST', body);
+  if (r.success) {
+    const consensus = r.consensus ? `Consensus: ${r.consensus}` : 'Vote recorded';
+    msg.innerHTML = `<div class="success-msg">✅ ${consensus} (${r.votes.length} votes cast)</div>`;
+    loadChallenges(); loadCredentials(); loadStats();
+  } else {
+    msg.innerHTML = `<div class="error-msg">❌ ${r.message}</div>`;
+  }
+}
+
+async function loadCredentials() {
+  const skill = document.getElementById('filter-skill')?.value || '';
+  const creds = await api(`/api/credentials${skill ? '?skill='+skill : ''}`);
+  const el = document.getElementById('credentials-list');
+  if (!creds.length) { el.innerHTML = '<div class="empty">No verified credentials yet</div>'; return; }
+  el.innerHTML = `<table>
+    <tr><th>Agent</th><th>Skill</th><th>Issued</th><th>Expires</th><th>Status</th></tr>
+    ${creds.map(c=>`<tr>
+      <td style="color:var(--accent2)">${c.agentId}</td>
+      <td><strong>${c.skill}</strong></td>
+      <td style="color:var(--muted)">${new Date(c.issuedAt).toLocaleDateString()}</td>
+      <td style="color:var(--muted)">${new Date(c.expiresAt).toLocaleDateString()}</td>
+      <td><span class="badge badge-verified">✅ VERIFIED</span></td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+async function loadProfile() {
+  const agentId = document.getElementById('profile-agentId').value.trim();
+  if (!agentId) return;
+  const p = await api(`/api/agents/${agentId}/profile`);
+  const el = document.getElementById('profile-result');
+  const scoreColor = p.score > 70 ? 'var(--green)' : p.score > 40 ? 'var(--yellow)' : 'var(--red)';
+  el.innerHTML = `
+    <div class="profile-header">
+      <div class="avatar">🤖</div>
+      <div style="flex:1">
+        <div style="font-size:18px; font-weight:bold; color:var(--text)">${agentId}</div>
+        <div style="color:var(--muted); font-size:12px; margin-top:4px">${p.credentials.length} verified credentials · ${p.skills.length} skill claims</div>
+      </div>
+      <div style="text-align:center">
+        <div class="trust-score" style="color:${scoreColor}">${p.score}</div>
+        <div class="trust-label">TRUST SCORE</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Verified Credentials</div>
+        ${p.credentials.length ? `<table><tr><th>Skill</th><th>Expires</th></tr>
+          ${p.credentials.map(c=>`<tr><td>${c.skill}</td><td>${new Date(c.expiresAt).toLocaleDateString()}</td></tr>`).join('')}
+        </table>` : '<div class="empty">No credentials</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">Skill Claims</div>
+        ${p.skills.length ? `<table><tr><th>Skill</th><th>Status</th></tr>
+          ${p.skills.map(s=>`<tr><td>${s.skill}</td><td><span class="badge badge-${s.status.toLowerCase()}">${s.status}</span></td></tr>`).join('')}
+        </table>` : '<div class="empty">No skills registered</div>'}
+      </div>
+    </div>`;
+}
+
+async function runEvaluation() {
+  const skill = document.getElementById('eval-skill').value;
+  const context = document.getElementById('eval-context').value.trim();
+  const response = document.getElementById('eval-response').value.trim();
+  const el = document.getElementById('eval-result');
+  if (!response) { el.innerHTML = '<div class="empty">Please enter a response to evaluate</div>'; return; }
+  el.innerHTML = '<div class="empty">🤖 Claude is evaluating...</div>';
+  try {
+    const r = await api('/api/evaluate', 'POST', {skill, context, response});
+    const scoreColor = r.score > 70 ? 'var(--green)' : r.score > 40 ? 'var(--yellow)' : 'var(--red)';
+    el.innerHTML = `
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="font-size:48px; font-weight:bold; color:${scoreColor}">${r.score}</div>
+        <div style="font-size:14px; color:var(--muted)">/ 100</div>
+        <span class="badge badge-${r.verdict==='PASS'?'verified':'failed'}" style="margin-top:8px">${r.verdict}</span>
+      </div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:12px">${r.reasoning}</div>
+      ${r.strengths?.length ? `<div style="color:var(--green); font-size:12px; margin-bottom:8px">✅ ${r.strengths.join(' · ')}</div>` : ''}
+      ${r.weaknesses?.length ? `<div style="color:var(--red); font-size:12px">⚠️ ${r.weaknesses.join(' · ')}</div>` : ''}`;
+  } catch(e) {
+    el.innerHTML = '<div class="error-msg">Evaluator unavailable. Check Claude API key.</div>';
+  }
+}
+
+const feedMessages = [
+  'agent-alpha-001 registered skill: wallet-analysis (stake: 100 TNK)',
+  'agent-beta-002 issued challenge to agent-alpha-001 for wallet-analysis',
+  'agent-witness-003 cast PASS vote on challenge #a1b2c3',
+  'CREDENTIAL ISSUED: agent-alpha-001 verified in wallet-analysis',
+  'agent-gamma-004 registered skill: swap-routing (stake: 150 TNK)',
+  'New peer connected: node-0x7f3a... (Lagos, NG)',
+  'agent-delta-005 queried verified agents in price-prediction',
+  'Credential expiry warning: agent-theta-009 wallet-analysis expires in 3 days'
+];
+
+async function loadNetwork() {
+  const net = await api('/api/network/broadcast');
+  document.getElementById('network-stats').innerHTML = `
+    <table><tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Network ID</td><td style="color:var(--accent2)">${net.networkId}</td></tr>
+    <tr><td>Connected Peers</td><td style="color:var(--green)">${net.peers}</td></tr>
+    <tr><td>Active Challenges</td><td>${net.activeChallenges}</td></tr>
+    <tr><td>Total Credentials</td><td>${net.totalCredentials}</td></tr>
+    <tr><td>Registered Agents</td><td>${net.registeredAgents}</td></tr>
+    </table>`;
+
+  const feed = document.getElementById('network-feed');
+  feed.innerHTML = feedMessages.map((m, i) => `
+    <div class="feed-item">
+      <div>${m}</div>
+      <div class="feed-time">${new Date(Date.now() - i * 45000).toLocaleTimeString()} · Intercom sidechannel</div>
+    </div>`).join('');
+}
+
+// Init
+loadStats();
+loadSkills();
+setInterval(loadStats, 10000);
+</script>
+
+</body>
+</html>
