@@ -37,7 +37,7 @@ An optional Claude AI layer acts as an objective evaluator for open-ended tasks 
 
 ![Skill Registry](screenshots/Screenshot%20(43).png)
 ![Challenge Engine](screenshots/Screenshot%20(44).png)
-![Credentials](screenshots/screenshot-3.png)
+![Credentials](screenshots/Screenshot%20(45).png)
 ![Network Feed](screenshots/screenshot-4.png)
 
 ---
